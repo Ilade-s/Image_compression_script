@@ -93,16 +93,9 @@ def get_nearest_color(color: tuple[int, int, int], colors: list[tuple[int, int, 
     for c in colors:
         ColorToRemove = 0
         for band, b in zip(color, c):
-            if ColorToRemove:
-                pass
-            elif abs(band - b) > ecart_colors*.6:
+            if abs(band - b) > ecart_colors*.6:
                 ColorToRemove = 1
         if ColorToRemove: data.remove(c)
-    #print("\t",len(data))
-    #distances = [[item, sum(
-    #    abs(int(float(color[i]))-int(float(item[i]))) for i in range(len(color)))] 
-    #        for item in data]
-    #return sorted(distances, key=lambda e: e[1])[0][0]
     for item in data:
         if sum(abs(band - b) for band, b in zip(color, item))/3 <= ecart_colors:
             return item
