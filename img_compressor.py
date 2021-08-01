@@ -4,10 +4,10 @@ from time import perf_counter
 from img_retreiver import retrieve_img_from_CSV
 
 # Variables used in the program, can be changed, paths must be safe filenames
-PATH_TO_FILE = 'images/f.png' # path of the original image
+PATH_TO_FILE = 'images/Lazy_club.png' # path of the original image
 SAVE_PATH = PATH_TO_FILE.split('.')[0]+'-compressed.'+PATH_TO_FILE.split('.')[1] # path to save the compressed image
 PIXEL_PER_MOTIF = 1 # possible choices in [1, 2, 3] (1 is very much recommended)
-ECART_COLORS = 16 # 1 means all the [0;255] band will be used, if more the band will be divided by the given number
+ECART_COLORS = 64 # 1 means all the [0;255] band will be used, if more the band will be divided by the given number
 print(f'{(255//ECART_COLORS)**3} couleurs')
 
 def create_colors(colors_used: list[tuple[int, int, int]], ecart_colors: int) -> list[tuple[int, int, int]]:
@@ -175,5 +175,8 @@ with open('convert.csv', "w+", newline='\n') as convertFile:
     
 # réécriture
 print("Retreiving the compressed image...")
-
+start = perf_counter()
 retrieve_img_from_CSV('convert.csv', SAVE_PATH)
+end = perf_counter()
+execution_time = round((end - start),3)
+print(f'{execution_time}s')
