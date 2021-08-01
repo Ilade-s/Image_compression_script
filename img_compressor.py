@@ -4,10 +4,10 @@ from time import perf_counter
 from img_retreiver import retrieve_img_from_CSV
 
 # Variables used in the program, can be changed, paths must be safe filenames
-PATH_TO_FILE = 'images/risiTest.png' # path of the original image
+PATH_TO_FILE = 'images/f.png' # path of the original image
 SAVE_PATH = PATH_TO_FILE.split('.')[0]+'-compressed.'+PATH_TO_FILE.split('.')[1] # path to save the compressed image
 PIXEL_PER_MOTIF = 1 # possible choices in [1, 2, 3] (1 is very much recommended)
-ECART_COLORS = 4 # 1 means all the [0;255] band will be used, if more the band will be divided by the given number
+ECART_COLORS = 16 # 1 means all the [0;255] band will be used, if more the band will be divided by the given number
 print(f'{(255//ECART_COLORS)**3} couleurs')
 
 def create_colors(colors_used: list[tuple[int, int, int]], ecart_colors: int) -> list[tuple[int, int, int]]:
@@ -118,16 +118,20 @@ print("\tCleaning the color list...")
 colors_used = list(set([e[1] for e in img.getcolors(2**24)]))
 colors_used = create_colors(colors_used, ECART_COLORS)
 print("\t..Done")
-simplifiedImage = [
-    [
-        tuple([
-            get_nearest_color(img.getpixel((x*PIXEL_PER_MOTIF+i, y)), colors_used, ECART_COLORS)
-            for i in range(PIXEL_PER_MOTIF)
-        ])
-        for x in range(xImg//PIXEL_PER_MOTIF)
-    ]
-    for y in range(yImg)
-]
+dict_nearest_colors = {} # contains all results from get_nearest_color() et optimise image creation when pixels have the same color
+simplifiedImage = [[] for _ in range(yImg)]
+for y in range(yImg):
+    for x in range(xImg//PIXEL_PER_MOTIF):
+        for i in range(PIXEL_PER_MOTIF):
+            tmp_list = []
+            pixel = img.getpixel((x*PIXEL_PER_MOTIF+i, y))
+            if pixel in dict_nearest_colors.keys(): # there is already a result
+                tmp_list.append(dict_nearest_colors[pixel])
+            else: # first time seeing this color
+                nearest_pixel_color = get_nearest_color(pixel, colors_used, ECART_COLORS)
+                dict_nearest_colors[pixel] = nearest_pixel_color
+                tmp_list.append(nearest_pixel_color)
+        simplifiedImage[y].append(tuple(tmp_list))
 
 end = perf_counter()
 execution_time = round((end - start),3)
