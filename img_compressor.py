@@ -4,10 +4,10 @@ from time import perf_counter
 from img_retreiver import retrieve_img_from_CSV
 
 # Variables used in the program, can be changed, paths must be safe filenames
-PATH_TO_FILE = 'images/Lazy_club.png' # path of the original image
+PATH_TO_FILE = 'images/f.png' # path of the original image
 SAVE_PATH = PATH_TO_FILE.split('.')[0]+'-compressed.'+PATH_TO_FILE.split('.')[1] # path to save the compressed image
 PIXEL_PER_MOTIF = 1 # possible choices in [1, 2, 3] (1 is very much recommended)
-ECART_COLORS = 64 # 1 means all the [0;255] band will be used, if more the band will be divided by the given number
+ECART_COLORS = 4 # 1 means all the [0;255] band will be used, if more the band will be divided by the given number
 print(f'{(255//ECART_COLORS)**3} couleurs')
 
 def create_colors(colors_used: list[tuple[int, int, int]], ecart_colors: int) -> list[tuple[int, int, int]]:
@@ -15,7 +15,9 @@ def create_colors(colors_used: list[tuple[int, int, int]], ecart_colors: int) ->
     Renvoie les couleurs utiles pour l'image avec l'écart souhaité (qualité souhaitée)
 
     """
-    band_list = [i for i in range(256) if not i % ecart_colors] + [255]
+    band_list = [i for i in range(256) if not i % ecart_colors]
+    if 255 not in band_list:
+        band_list.append(255)
     
     colors = [
         tuple([
@@ -27,7 +29,7 @@ def create_colors(colors_used: list[tuple[int, int, int]], ecart_colors: int) ->
 
     return list(set(colors))
 
-def create_motifs(colors: list[tuple[int, int, int]], n_pixels=PIXEL_PER_MOTIF) -> list[tuple[tuple[int, int, int]]]:
+def create_motifs(colors: list[tuple[int, int, int]], n_pixels: int) -> list[tuple[tuple[int, int, int]]]:
     """
     create all possible motifs from the colors, with the pixel per motifs according to PIXEL_PER_MOTIF
 
@@ -89,13 +91,15 @@ def get_nearest_color(color: tuple[int, int, int], colors: list[tuple[int, int, 
         - color : tuple[int, int, int]
             - couleur identifiée
     """
-    data = [*colors]
+    data = []
     for c in colors:
-        ColorToRemove = 0
+        ColorToKeep = 1
         for band, b in zip(color, c):
             if abs(band - b) > ecart_colors*.6:
-                ColorToRemove = 1
-        if ColorToRemove: data.remove(c)
+                ColorToKeep = 0
+                break
+        if ColorToKeep: 
+            data.append(c)
     for item in data:
         if sum(abs(band - b) for band, b in zip(color, item))/3 <= ecart_colors:
             return item
@@ -115,8 +119,8 @@ dict_nearest_colors = {} # contains all results from get_nearest_color() et opti
 simplifiedImage = [[] for _ in range(yImg)]
 for y in range(yImg):
     for x in range(xImg//PIXEL_PER_MOTIF):
+        tmp_list = []
         for i in range(PIXEL_PER_MOTIF):
-            tmp_list = []
             pixel = img.getpixel((x*PIXEL_PER_MOTIF+i, y))
             if pixel in dict_nearest_colors.keys(): # there is already a result
                 tmp_list.append(dict_nearest_colors[pixel])
@@ -133,7 +137,7 @@ print(f'{execution_time}s')
 print("Converting the image...")
 start = perf_counter()
 print("\tCleaning the motif list...")
-motifs = create_motifs(colors_used)
+motifs = create_motifs(colors_used, PIXEL_PER_MOTIF)
 save_motifs(motifs)
 print("\t...Done")
 
