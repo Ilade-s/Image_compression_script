@@ -4,7 +4,7 @@ import csv
 from time import perf_counter 
 from img_retreiver import retrieve_img_from_CSV # used after conversion in csv
 from argparse import ArgumentParser # if launched in main
-from tkinter.filedialog import askopenfilename
+from tkinter.filedialog import askopenfilename, asksaveasfilename
 
 def compress_image(path_to_file: str, quality_factor: int, save_path="", pixel_per_motif=1, keep_csv=0) -> None:
     """
@@ -219,7 +219,7 @@ def main():
     parser.add_argument("quality_factor", type=int, 
                     help="factor (value) which will be used to divide the color bands, as such, must be chosen between 256 and 1 (included)")
     parser.add_argument("--save_path", '-s', action='store', type=str, default='',
-                    help="path for the compressed image") 
+                    help="path for the compressed image (put . to choose it with a GUI)") 
     parser.add_argument("--pixel_per_motif", '-p', action='store', type=int, default=1,
                     help="number of pixels per motif : if not set, will default at 1 (recommended)")                
     parser.add_argument('--keep_csv', '-c', action='store_true', default=False,
@@ -227,6 +227,10 @@ def main():
     kwargs = vars(parser.parse_args())
     if kwargs['path_to_file'] == '.':
         kwargs['path_to_file'] = askopenfilename(initialdir=os.getcwd(), title="Image to compress...")
+    if kwargs['save_path'] == '.':
+        kwargs['save_path'] = asksaveasfilename(initialdir=kwargs['path_to_file'],
+            title="Save compressed image...", defaultextension='.'+kwargs['path_to_file'].split('.')[-1], 
+                filetypes=(("original img format", "*."+kwargs['path_to_file'].split('.')[-1]), ("other format", "*.*")))
     compress_image(**kwargs)
 
 if __name__=='__main__':
