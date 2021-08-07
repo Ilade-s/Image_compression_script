@@ -4,6 +4,7 @@ import csv
 from time import perf_counter 
 from img_retreiver import retrieve_img_from_CSV # used after conversion in csv
 from argparse import ArgumentParser # if launched in main
+from tkinter.filedialog import askopenfilename
 
 def compress_image(path_to_file: str, quality_factor: int, save_path="", pixel_per_motif=1, keep_csv=0) -> None:
     """
@@ -12,7 +13,7 @@ def compress_image(path_to_file: str, quality_factor: int, save_path="", pixel_p
 
     PARAMETERS :
         - path_to_file : str
-            - path, relative to the working directory, of the original image (most format are supported, refer to the pillow docs for more infos)
+            - path of the original image (most format are supported, refer to the pillow docs for more infos)
         - quality_factor : int
             - number which will be used to divide the color bands, as such, must be chosen between 256 and 1 (included)
             - 8 is recommended for best results and speed
@@ -214,7 +215,7 @@ def compress_image(path_to_file: str, quality_factor: int, save_path="", pixel_p
 def main():
     parser = ArgumentParser(description="Compress images by simplifying the color bands")
     parser.add_argument("path_to_file", type=str, 
-                    help="path to the orginal image, relative to the working directory")
+                    help="path to the orginal image (put . to choose it with a GUI)")
     parser.add_argument("quality_factor", type=int, 
                     help="factor (value) which will be used to divide the color bands, as such, must be chosen between 256 and 1 (included)")
     parser.add_argument("--save_path", '-s', action='store', type=str, default='',
@@ -224,7 +225,8 @@ def main():
     parser.add_argument('--keep_csv', '-c', action='store_true', default=False,
                    help="if set, the csv conversion files will be kept in the working directory")
     kwargs = vars(parser.parse_args())
-
+    if kwargs['path_to_file'] == '.':
+        kwargs['path_to_file'] = askopenfilename(initialdir=os.getcwd(), title="Image to compress...")
     compress_image(**kwargs)
 
 if __name__=='__main__':
