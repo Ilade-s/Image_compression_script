@@ -6,6 +6,8 @@ from img_retreiver import retrieve_img_from_CSV # used after conversion in csv
 from argparse import ArgumentParser # if launched in main
 from tkinter.filedialog import askopenfilename, asksaveasfilename
 
+__VERSION__ = '1.0'
+
 def compress_image(path_to_file: str, quality_factor: int, save_path="", pixel_per_motif=1, keep_csv=0) -> None:
     """
     Compress the image at path_to_file with the given quality_factor at the colors, then saves it to save path
@@ -224,6 +226,7 @@ def main():
                     help="number of pixels per motif : if not set, will default at 1 (recommended)")                
     parser.add_argument('--keep_csv', '-c', action='store_true', default=False,
                    help="if set, the csv conversion files will be kept in the working directory")
+    parser.add_argument('--version', '-v', action='version', version=f'Image compressor v{__VERSION__}, by Raphaël')
     kwargs = vars(parser.parse_args())
     if kwargs['path_to_file'] == '.':
         kwargs['path_to_file'] = askopenfilename(initialdir=os.getcwd(), title="Image to compress...")
