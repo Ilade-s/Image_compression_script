@@ -6,7 +6,7 @@ from img_retreiver import retrieve_img_from_CSV # used after conversion in csv
 from argparse import ArgumentParser # if launched in main
 from tkinter.filedialog import askopenfilename, asksaveasfilename
 
-__VERSION__ = '1.0'
+__VERSION__ = '1.1'
 
 def compress_image(path_to_file: str, quality_factor: int, save_path="", pixel_per_motif=1, keep_csv=0) -> None:
     """
@@ -40,17 +40,9 @@ def compress_image(path_to_file: str, quality_factor: int, save_path="", pixel_p
     def create_colors(colors_used: list[tuple[int, int, int]], ecart_colors: int) -> list[tuple[int, int, int]]:
         """
         Renvoie les couleurs utiles pour l'image avec l'écart souhaité (qualité souhaitée)
-
         """
-        band_list = [i for i in range(256) if not i % ecart_colors]
-        if 255 not in band_list:
-            band_list.append(255)
-        
         colors = [
-            tuple([
-                sorted(band_list, key=lambda b: abs(band - b))[0]
-                for band in color
-            ])
+            get_nearest_color(color, ecart_colors)
             for color in colors_used
         ]
 
@@ -104,32 +96,23 @@ def compress_image(path_to_file: str, quality_factor: int, save_path="", pixel_p
             w = csv.writer(file)
             w.writerows(hexMotifs)
 
-    def get_nearest_color(color: tuple[int, int, int], colors: list[tuple[int, int, int]], ecart_colors: int) -> tuple[int, int, int]:
+    def get_nearest_color(color: tuple[int, int, int], quality_factor: int) -> tuple[int, int, int]:
         """
         Donne la couleur simplifiée la plus proche de la couleur donnée
 
         PARAMETRES :
             - color : tuple[int, int, int]
                 - couleur à simplifier
-            - data : list[tuple[int, int, int]]
-                - liste des couleurs simplifiées
-
+            - quality_factor : int
+                - facteur de division des bandes de couleurs RGB
         SORTIE :
             - color : tuple[int, int, int]
                 - couleur identifiée
         """
-        data = []
-        for c in colors:
-            ColorToKeep = 1
-            for band, b in zip(color, c):
-                if abs(band - b) > ecart_colors*.6:
-                    ColorToKeep = 0
-                    break
-            if ColorToKeep: 
-                data.append(c)
-        for item in data:
-            if sum(abs(band - b) for band, b in zip(color, item))/3 <= ecart_colors:
-                return item
+        nearest_color = [round(band / quality_factor) * quality_factor for band in color]
+        nearest_color = [255 if band == 256 else band for band in nearest_color]
+        
+        return tuple(nearest_color)
 
     img = Image.open(path_to_file)
     img = img.convert('RGB')
@@ -152,7 +135,7 @@ def compress_image(path_to_file: str, quality_factor: int, save_path="", pixel_p
                 if pixel in dict_nearest_colors.keys(): # there is already a result
                     tmp_list.append(dict_nearest_colors[pixel])
                 else: # first time seeing this color
-                    nearest_pixel_color = get_nearest_color(pixel, colors_used, quality_factor)
+                    nearest_pixel_color = get_nearest_color(pixel, quality_factor)
                     dict_nearest_colors[pixel] = nearest_pixel_color
                     tmp_list.append(nearest_pixel_color)
             simplifiedImage[y].append(tuple(tmp_list))
@@ -170,41 +153,29 @@ def compress_image(path_to_file: str, quality_factor: int, save_path="", pixel_p
     for line in simplifiedImage:
         current_line = []
         n_same_motif = 1
-        past_motif = ()
-        iter_line = iter(line)
-        next_motif = next(iter_line)
-        for motif in line:
-            next_motif = next(iter_line, ())
-            if motif == past_motif:
-                n_same_motif += 1
-                if motif != next_motif:
-                    if n_same_motif > 1:
-                        current_line.append(f'{hex(motifs.index(motif))[2:]}-{hex(n_same_motif)[2:]}')
-                    else:
-                        current_line.append(hex(motifs.index(motif))[2:])
-                    n_same_motif = 1
-            else:
-                if motif != next_motif:
-                    if n_same_motif > 1:
-                        current_line.append(f'{hex(motifs.index(motif))[2:]}-{hex(n_same_motif)[2:]}')
-                    else:
-                        current_line.append(hex(motifs.index(motif))[2:])
+        line_next = line[1:] + [tuple()]
+        for motif, next_motif in zip(line, line_next):
+            if motif != next_motif:
+                if n_same_motif > 1:
+                    current_line.append(f'{hex(motifs.index(motif))[2:]}-{hex(n_same_motif)[2:]}')
+                else:
+                    current_line.append(hex(motifs.index(motif))[2:])
                 n_same_motif = 1
-            past_motif = motif
+            else:
+                n_same_motif += 1
         convertedImage.append(current_line)
-
 
     end = perf_counter()
     execution_time = round((end - start),3)
     print(f'{execution_time}s')
-
-    with open('convert.csv', "w+", newline='\n') as convertFile:
-        w = csv.writer(convertFile)
-        w.writerows(convertedImage)
-        
+    
     # réécriture
     print("Retreiving the compressed image...")
     start = perf_counter()
+    with open('convert.csv', "w+", newline='\n') as convertFile:
+        w = csv.writer(convertFile)
+        w.writerows(convertedImage)
+
     retrieve_img_from_CSV('convert.csv', save_path)
     end = perf_counter()
     execution_time = round((end - start),3)
